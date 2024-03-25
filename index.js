@@ -34,12 +34,38 @@ async function run() {
     app.get("/men-clothing", async (req, res) => {
       try {
         const category = req.query.category;
+        const minAmount = parseFloat(req.query.minAmount);
+        const maxAmount = parseFloat(req.query.maxAmount);
+        const rating = req.query.rating;
+
         let query = {};
+
         if (category) {
           query.category = category;
         }
+        if (!isNaN(minAmount) && !isNaN(maxAmount)) {
+          query.amount = {};
+          query.amount.$gte = minAmount;
+          query.amount.$lte = maxAmount;
+        }
+
+        if (rating) {
+          query.rating = parseFloat(rating); // Parsing rating as float
+        }
 
         const result = await menCollection.find(query).toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    app.get("/men-clothing/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      try {
+        const result = await menCollection.findOne(query);
         res.status(200).send(result);
       } catch (error) {
         console.error("Error:", error);
