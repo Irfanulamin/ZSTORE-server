@@ -83,6 +83,19 @@ async function run() {
       }
     });
 
+    app.get("/trending-products", async (req, res) => {
+      try {
+        const result = await menCollection
+          .find()
+          .sort({ rating: -1 })
+          .toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
@@ -97,7 +110,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  return res.status(200).send({ response: "world" });
+  return res
+    .status(200)
+    .send({ response: "world", success: true, timestamp: new Date() });
 });
 
 const PORT = process.env.PORT || 5000;
