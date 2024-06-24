@@ -148,6 +148,40 @@ async function run() {
       }
     });
 
+    const ordersCollection = client.db("ZSTORE").collection("orders");
+
+    app.get("/orders", async (req, res) => {
+      try {
+        const result = await ordersCollection.find().toArray();
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    app.post("/create-order", async (req, res) => {
+      const orderDetails = req.body;
+      const result = await ordersCollection.insertOne(orderDetails);
+      res.status(200).send(result);
+    });
+    app.put("/orders/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDetails = {
+          $set: {
+            status: "Delivered",
+          },
+        };
+        const result = await ordersCollection.updateOne(filter, updatedDetails);
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
