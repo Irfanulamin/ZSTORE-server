@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const jwt = require("jsonwebtoken");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -11,15 +12,12 @@ app.use(
 );
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
 async function run() {
@@ -40,13 +38,12 @@ async function run() {
       }
 
       // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Insert user into the database
       await collection.insertOne({
         name,
         email,
-        password: hashedPassword,
+        password,
         type: "user",
       });
 
