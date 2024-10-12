@@ -20,6 +20,11 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
 });
 
+const formatDate = (date) => {
+  const options = { day: "numeric", month: "long", year: "numeric" };
+  return new Intl.DateTimeFormat("en-GB", options).format(date);
+};
+
 async function run() {
   try {
     const collection = client.db("ZSTORE").collection("auth");
@@ -57,27 +62,18 @@ async function run() {
     app.post("/api/v1/login", async (req, res) => {
       const { email, password } = req.body;
 
-      // Find user by email
       const user = await collection.findOne({ email });
       if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Compare hashed password
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
+      if (user.password !== password) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
-
-      // Generate JWT token
-      const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
-        expiresIn: process.env.EXPIRES_IN,
-      });
 
       res.json({
         success: true,
         message: "Login successful",
-        token,
       });
     });
 
@@ -165,6 +161,7 @@ async function run() {
       const result = await ordersCollection.insertOne(orderDetails);
       res.status(200).send(result);
     });
+
     app.put("/orders/:id", async (req, res) => {
       try {
         const id = req.params.id;
@@ -175,6 +172,27 @@ async function run() {
           },
         };
         const result = await ordersCollection.updateOne(filter, updatedDetails);
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    const reviewCollection = client.db("ZSTORE").collection("reviews");
+
+    app.post("/create-review", async (req, res) => {
+      const reviewDetails = req.body;
+      const result = await reviewCollection.insertOne({
+        ...reviewDetails,
+        date: formatDate(new Date()),
+      });
+      res.status(200).send(result);
+    });
+
+    app.get("/reviews", async (req, res) => {
+      try {
+        const result = await reviewCollection.find().toArray();
         res.status(200).send(result);
       } catch (error) {
         console.error("Error:", error);
