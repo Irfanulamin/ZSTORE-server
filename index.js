@@ -49,7 +49,8 @@ async function run() {
         name,
         email,
         password,
-        type: "user",
+        photo: "https://i.ibb.co.com/rpPdQZK/Pizza-Man.jpg",
+        type: "User",
       });
 
       res.status(201).json({
