@@ -162,6 +162,36 @@ async function run() {
       res.status(200).send(result);
     });
 
+    app.put("/update-product/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedProduct = req.body;
+        const updatedDetails = {
+          $set: {
+            product_name: updatedProduct.product_name,
+            category: updatedProduct.category,
+            product_image: updatedProduct.product_image,
+            flash_sale: updatedProduct.flash_sale,
+            amount: updatedProduct.amount,
+            description: updatedProduct.description,
+            keypoints: updatedProduct.keypoints,
+            reviews: updatedProduct.reviews,
+            rating: updatedProduct.rating,
+            product_id: updatedProduct.product_id,
+          },
+        };
+        const result = await productsCollection.updateOne(
+          filter,
+          updatedDetails
+        );
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     app.get("/men-clothing", async (req, res) => {
       try {
         const category = req.query.category;
