@@ -167,6 +167,7 @@ async function run() {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
         const updatedProduct = req.body;
+        console.log(updatedProduct);
         const updatedDetails = {
           $set: {
             product_name: updatedProduct.product_name,
@@ -176,15 +177,29 @@ async function run() {
             amount: updatedProduct.amount,
             description: updatedProduct.description,
             keypoints: updatedProduct.keypoints,
-            reviews: updatedProduct.reviews,
-            rating: updatedProduct.rating,
-            product_id: updatedProduct.product_id,
           },
         };
-        const result = await productsCollection.updateOne(
-          filter,
-          updatedDetails
-        );
+        const result = await menCollection.updateOne(filter, updatedDetails);
+
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ message: "Product not found" });
+        }
+        if (result.modifiedCount === 0) {
+          return res.status(400).send({ message: "No changes made" });
+        }
+
+        res.status(200).send(result);
+      } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    app.delete("/delete-product/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await menCollection.deleteOne(query);
         res.status(200).send(result);
       } catch (error) {
         console.error("Error:", error);
