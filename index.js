@@ -78,7 +78,89 @@ async function run() {
       });
     });
 
+    //
+    app.put("/api/v1/users/email/:email", async (req, res) => {
+      const { email } = req.params;
+      const filter = { email: email };
+      const { name, photo } = req.body;
+
+      // Ensure name and photo exist
+      if (!name && !photo) {
+        return res.status(400).json({
+          success: false,
+          message: "No fields to update provided.",
+        });
+      }
+
+      const updatedDetails = {
+        $set: {},
+      };
+
+      if (name) updatedDetails.$set.name = name;
+      if (photo) updatedDetails.$set.photo = photo;
+
+      try {
+        // Attempt to update the user document
+        const result = await collection.updateOne(
+          filter, // filter to find the document based on email
+          updatedDetails // using $set to update only the specified fields
+        );
+
+        if (result.modifiedCount === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found or no changes made.",
+          });
+        }
+
+        res.status(200).json({
+          success: true,
+          message: "User updated successfully.",
+          data: result,
+        });
+      } catch (error) {
+        console.error("Error updating user:", error.message);
+        res.status(500).json({
+          success: false,
+          message: error.message || "Server error",
+        });
+      }
+    });
+
+    //
+    app.get("/api/v1/users/email/:email", async (req, res) => {
+      const { email } = req.params;
+
+      try {
+        const user = await collection.findOne({ email });
+
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found",
+          });
+        }
+
+        const { password, ...userInfo } = user;
+        res.status(200).json({
+          success: true,
+          user: userInfo,
+        });
+      } catch (error) {
+        console.error(error); // Log the error for debugging
+        res.status(500).json({
+          success: false,
+          message: "Server error",
+        });
+      }
+    });
+
     const menCollection = client.db("ZSTORE").collection("mencollection");
+    app.post("/create-product", async (req, res) => {
+      const addedProduct = req.body;
+      const result = await menCollection.insertOne(addedProduct);
+      res.status(200).send(result);
+    });
 
     app.get("/men-clothing", async (req, res) => {
       try {
