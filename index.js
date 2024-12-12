@@ -319,7 +319,7 @@ async function run() {
         res.status(200).json({ id: session.id, order: result });
       } catch (error) {
         console.error("Error creating order:", error);
-        res.status(500).send("Internal Server Error");
+        res.status(500).send("Internal Server Error!");
       }
     });
 
