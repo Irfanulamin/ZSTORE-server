@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const cors = require("cors");
 require("dotenv").config();
 
@@ -285,9 +285,42 @@ async function run() {
     });
 
     app.post("/create-order", async (req, res) => {
-      const orderDetails = req.body;
-      const result = await ordersCollection.insertOne(orderDetails);
-      res.status(200).send(result);
+      try {
+        const { cart } = req.body;
+
+        const lineItems = cart.map((product) => ({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: product.name,
+              images: [product.image],
+            },
+            unit_amount: Math.round(product.price * 100),
+          },
+          quantity: product.quantity,
+        }));
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: lineItems,
+          mode: "payment",
+        });
+
+        // success_url: "YOUR_SUCCESS_URL",
+        // cancel_url: "YOUR_CANCEL_URL",
+        const orderDetails = {
+          cart,
+          sessionId: session.id,
+          createdAt: new Date(),
+          status: "pending",
+        };
+
+        const result = await ordersCollection.insertOne(orderDetails);
+        res.status(200).json({ id: session.id, order: result });
+      } catch (error) {
+        console.error("Error creating order:", error);
+        res.status(500).send("Internal Server Error");
+      }
     });
 
     app.put("/orders/:id", async (req, res) => {
