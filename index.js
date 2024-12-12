@@ -4,12 +4,7 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const cors = require("cors");
 require("dotenv").config();
 
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "https://zstore-client.vercel.app"],
-    credentials: true,
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 const { MongoClient, ObjectId } = require("mongodb");
