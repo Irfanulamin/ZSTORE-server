@@ -308,8 +308,8 @@ async function run() {
           payment_method_types: ["card"],
           line_items: lineItems,
           mode: "payment",
-          success_url: "http://localhost:3000/success", // Replace with your success URL
-          cancel_url: "https://localhost:3000/cancel", // Replace with your cancel URL
+          success_url: "https://zstore-client.vercel.app/success", // Replace with your success URL
+          cancel_url: "https://zstore-client.vercel.app/cancel", // Replace with your cancel URL
         });
 
         res.json({ id: session.id });
