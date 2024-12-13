@@ -1,12 +1,12 @@
 const express = require("express");
 const app = express();
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const cors = require("cors");
 require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ObjectId } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -280,17 +280,26 @@ async function run() {
     });
 
     app.post("/create-order", async (req, res) => {
+      const orderedProductInfo = req.body;
+      const result = await ordersCollection.insertOne(orderedProductInfo);
+      res.status(200).send(result);
+    });
+
+    app.post("/checkout", async (req, res) => {
       try {
-        const { cart } = req.body;
+        const cart = req.body; // Ensure the body contains the cart array
+        if (!Array.isArray(cart)) {
+          return res.status(400).json({ error: "Cart must be an array" });
+        }
 
         const lineItems = cart.map((product) => ({
           price_data: {
             currency: "usd",
             product_data: {
               name: product.name,
-              images: [product.image],
+              images: [product.image], // Matches the `image` field in your data
             },
-            unit_amount: Math.round(product.price * 100),
+            unit_amount: Math.round(product.amount * 100), // Converts `amount` to cents
           },
           quantity: product.quantity,
         }));
@@ -299,22 +308,16 @@ async function run() {
           payment_method_types: ["card"],
           line_items: lineItems,
           mode: "payment",
+          success_url: "http://localhost:3000/success", // Replace with your success URL
+          cancel_url: "https://localhost:3000/cancel", // Replace with your cancel URL
         });
 
-        // success_url: "YOUR_SUCCESS_URL",
-        // cancel_url: "YOUR_CANCEL_URL",
-        const orderDetails = {
-          cart,
-          sessionId: session.id,
-          createdAt: new Date(),
-          status: "pending",
-        };
-
-        const result = await ordersCollection.insertOne(orderDetails);
-        res.status(200).json({ id: session.id, order: result });
+        res.json({ id: session.id });
       } catch (error) {
-        console.error("Error creating order:", error);
-        res.status(500).send("Internal Server Error!");
+        console.error("Error creating checkout session:", error.message);
+        res
+          .status(500)
+          .json({ error: "An error occurred while creating the session" });
       }
     });
 
